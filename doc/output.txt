@@ -1,0 +1,16 @@
+
+
+$ kubectl dpod mypod-5bc4465b74-q6hn4 
+
+[33mPod: [0mmypod-5bc4465b74-q6hn4
+
+  [33mType[0m  [33mName[0m           [33mState[0m                 [33mRC[0m  [33mReady[0m  [33mImage[0m                                                                        
+  IC    init-datagen   T (Completed)          0  [32m✔[0m      harbor.example.com/project/path/init-comp1:v2.5
+  C     model          R                      0  [32m✔[0m      harbor.example.com/project/path/model:v4.0.7
+  C     msgqueue       W (ImagePullBackOff)   0  [31m✖[0m      harbor.example.com/project/path/msgqueue:v1.0.3
+                                                        Back-off pulling image "harbor.example.com/project/path/msgqueue:v1.0.3"
+  C     database       R                      0  [32m✔[0m      harbor.example.com/project/path/database:v1.2.0
+  C     web            R                      0  [32m✔[0m      harbor.example.com/project/path/web:v2.4.1
+  C     util           R                      0  [32m✔[0m      harbor.example.com/project/path/util:v0.9.3
+  C     datagen        R                      0  [31m✖[0m      harbor.example.com/project/path/datagen:v4.0.7
+
