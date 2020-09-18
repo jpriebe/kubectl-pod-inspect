@@ -17,4 +17,4 @@
 .history
 kubectl-dpod
 release.sh
-.dist
+dist
