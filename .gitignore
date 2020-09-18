@@ -15,3 +15,5 @@
 # vendor/
 
 .history
+kubectl-dpod
+release.sh
