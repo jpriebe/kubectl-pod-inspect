@@ -5,7 +5,12 @@ is failing.  `kubectl describe` is just too verbose.  I got tired of searching t
 to track down the failed container.
 
 `kubectl-dpod` gives you just enough information about the containers to figure out what is going on
-quickly.
+quickly:
+
+- a list of all containers and their current status and image
+- all pod failure status conditions
+- the most recent N pod events (defaults to 10)
+- most recent N log lines from any non-ready containers (defaults to 5)
 
 ## Example
 
@@ -13,7 +18,7 @@ quickly.
 
 In this example output, you can see that container `msgqueue` is not running, due to an image pull problem.
 
-Container `datagen` is running, but is slower to start up than the other containers.
+Container `datagen` is running, but hasn't completed startup yet.
 
 ## Installing
 

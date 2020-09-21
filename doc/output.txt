@@ -2,7 +2,9 @@
 
 $ kubectl dpod mypod-5bc4465b74-q6hn4 
 
-[33mPod: [0mmypod-5bc4465b74-q6hn4
+[36mPod: [0mmy-namespace / my-pod-b568797b-kfjmh
+
+[36mContainers: [0m
 
   [33mType[0m  [33mName[0m           [33mState[0m                 [33mRC[0m  [33mReady[0m  [33mImage[0m                                                                        
   IC    init-datagen   T (Completed)          0  [32m✔[0m      harbor.example.com/project/path/init-comp1:v2.5
@@ -13,4 +15,33 @@ $ kubectl dpod mypod-5bc4465b74-q6hn4
   C     web            R                      0  [32m✔[0m      harbor.example.com/project/path/web:v2.4.1
   C     util           R                      0  [32m✔[0m      harbor.example.com/project/path/util:v0.9.3
   C     datagen        R                      0  [31m✖[0m      harbor.example.com/project/path/datagen:v4.0.7
+
+[36mFailed Pod Conditions:
+
+[0m  [33mCondition[0m        [33mReason[0m              [33mMessage[0m                                                        
+  Ready            ContainersNotReady  containers with unready status: [msgqueue datagen] 
+  ContainersReady  ContainersNotReady  containers with unready status: [msgqueue datagen]
+
+[36mLast 10 pod events:
+
+[0m  [33mLast Seen[0m                      [33mType[0m    [33mReason[0m   [33mMessage[0m
+  2020-09-18 11:59:08 -0400 EDT  Normal  Created  Created container database
+  2020-09-18 11:59:08 -0400 EDT  Normal  Started  Started container database
+  2020-09-18 11:59:08 -0400 EDT  Normal  Pulling  Pulling image "harbor.example.com/project/path/web:v2.4.1"
+  2020-09-18 11:59:08 -0400 EDT  Normal  Pulled   Successfully pulled image "harbor.example.com/project/path/web:v2.4.1"
+  2020-09-18 11:59:08 -0400 EDT  Normal  Created  Created container web
+  2020-09-18 11:59:08 -0400 EDT  Normal  Started  Started container web
+  2020-09-18 11:59:08 -0400 EDT  Normal  Pulling  Pulling image "harbor.example.com/project/path/util:v0.9.3"
+  2020-09-18 11:59:08 -0400 EDT  Normal  Pulled   Successfully pulled image "harbor.example.com/project/path/util:v0.9.3"
+  2020-09-18 11:59:09 -0400 EDT  Normal  Created  Created container util
+  2020-09-18 11:59:09 -0400 EDT  Normal  Started  Started container util
+
+[36mContainer[0m datagen [36mlogs (last 5 lines):[0m
+
+2020-09-18 15:59:18.598  INFO 7 --- [           main] log entry 1
+2020-09-18 15:59:18.634  INFO 7 --- [           main] log entry 2
+2020-09-18 15:59:18.634  INFO 7 --- [           main] log entry 3
+2020-09-18 15:59:18.787  INFO 7 --- [           main] log entry 4
+2020-09-18 15:59:18.787  INFO 7 --- [           main] log entry 5
+
 
