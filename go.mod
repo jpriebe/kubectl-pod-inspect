@@ -3,6 +3,7 @@ module github.com/jpriebe/kubectl-dpod
 go 1.14
 
 require (
+	github.com/alecjacobs5401/kube-client-wrapper v0.2.1
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/spf13/cobra v1.0.0
