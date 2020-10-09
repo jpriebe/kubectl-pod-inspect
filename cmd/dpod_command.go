@@ -353,7 +353,7 @@ func (dp *dpodCommand) getPodEvents(pod *v1.Pod) (string, error) {
 	eventsTruncated := false
 	if dp.numEvents > 0 {
 		if len(events) > dp.numEvents {
-			idxLast := len(events) - 1
+			idxLast := len(events)
 			idxFirst := idxLast - dp.numEvents
 
 			events = events[idxFirst:idxLast]
