@@ -372,8 +372,12 @@ func (dp *dpodCommand) getPodEvents(pod *v1.Pod) (string, error) {
 	})
 
 	for _, event := range events {
+		timestamp := event.LastTimestamp
+		if timestamp.IsZero() {
+			timestamp = event.CreationTimestamp
+		}
 		tw.Append([]string{
-			event.LastTimestamp.String(),
+			timestamp.String(),
 			event.Type,
 			event.Reason,
 			event.Message,
