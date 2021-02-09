@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const appLabel = "kubectl dpod"
+const appLabel = "kubectl pod-inspect"
 
 var version string
 
