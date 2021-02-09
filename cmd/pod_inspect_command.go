@@ -11,6 +11,7 @@ import (
 
 	// Initialize all known client auth plugins.
 	"k8s.io/client-go/kubernetes"
+	// add this, per krew best practices
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	v1 "k8s.io/api/core/v1"
