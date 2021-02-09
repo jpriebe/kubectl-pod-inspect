@@ -31,6 +31,7 @@ type containerInfo struct {
 	StateMessage string
 	RestartCount int32
 	Ready        bool
+	ReadyIcon    string
 }
 
 type podInspectCommand struct {
@@ -134,12 +135,13 @@ func (dp *podInspectCommand) displayPod(podName string) error {
 			return fmt.Errorf("status found for init container '%s'; no corresponding container in spec", cs.Name)
 		}
 
-		cstate, cmsg := getContainerStateInfo(cs.State)
+		cstate, cmsg, creadyicon := getContainerStateInfo(cs.State)
 
 		cinfo[key].State = cstate
 		cinfo[key].StateMessage = cmsg
 		cinfo[key].RestartCount = cs.RestartCount
 		cinfo[key].Ready = cs.Ready
+		cinfo[key].ReadyIcon = creadyicon
 
 		if !cs.Ready {
 			logs, err := dp.getPodLogs(podName, cinfo[key].Name)
@@ -171,12 +173,13 @@ func (dp *podInspectCommand) displayPod(podName string) error {
 			return fmt.Errorf("status found for container '%s'; no corresponding container in spec", cs.Name)
 		}
 
-		cstate, cmsg := getContainerStateInfo(cs.State)
+		cstate, cmsg, creadyicon := getContainerStateInfo(cs.State)
 
 		cinfo[key].State = cstate
 		cinfo[key].StateMessage = cmsg
 		cinfo[key].RestartCount = cs.RestartCount
 		cinfo[key].Ready = cs.Ready
+		cinfo[key].ReadyIcon = creadyicon
 
 		if !cs.Ready {
 			logs, err := dp.getPodLogs(podName, cinfo[key].Name)
@@ -212,10 +215,6 @@ func (dp *podInspectCommand) displayPod(podName string) error {
 	})
 	for _, key := range keys {
 		ci := cinfo[key]
-		ready := aurora.Green("✔").String()
-		if !ci.Ready {
-			ready = aurora.Red("✖").String()
-		}
 		restartCount := fmt.Sprintf("%d", ci.RestartCount)
 
 		tw.Append([]string{
@@ -223,7 +222,7 @@ func (dp *podInspectCommand) displayPod(podName string) error {
 			ci.Name,
 			ci.State,
 			restartCount,
-			ready,
+			ci.ReadyIcon,
 			ci.Image,
 		})
 		if ci.StateMessage != "" {
@@ -403,25 +402,29 @@ func (dp *podInspectCommand) getPodEvents(pod *v1.Pod) (string, error) {
 	return retval, nil
 }
 
-func getContainerStateInfo(state v1.ContainerState) (string, string) {
+func getContainerStateInfo(state v1.ContainerState) (string, string, string) {
 	stateCode := ""
 	reason := ""
 	message := ""
+	readyicon := ""
 
 	if state.Running != nil {
 		stateCode = "R"
 		reason = ""
 		message = ""
+		readyicon = aurora.Green("✔").String()
 	} else if state.Terminated != nil {
 		stateCode = "T"
 		reason = state.Terminated.Reason
 		message = state.Terminated.Message
+		readyicon = aurora.Red("✖").String()
 	} else if state.Waiting != nil {
 		stateCode = "W"
 		reason = state.Waiting.Reason
 		message = state.Waiting.Message
+		readyicon = aurora.Yellow("…").String()
 	} else {
-		return "n/a", ""
+		return "n/a", "", "?"
 	}
 
 	str1 := stateCode
@@ -429,12 +432,7 @@ func getContainerStateInfo(state v1.ContainerState) (string, string) {
 		str1 = fmt.Sprintf("%s (%s)", stateCode, reason)
 	}
 
-	str2 := ""
-	if message != "" {
-		str2 = message
-	}
-
-	return str1, str2
+	return str1, message, readyicon
 }
 
 func (dp *podInspectCommand) newTablewriter(out io.Writer) *tablewriter.Table {
