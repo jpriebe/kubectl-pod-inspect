@@ -15,6 +15,6 @@
 # vendor/
 
 .history
-kubectl-dpod
+kubectl-pod-inspect
 release.sh
 dist
