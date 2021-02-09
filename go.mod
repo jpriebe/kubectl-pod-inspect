@@ -1,4 +1,4 @@
-module github.com/jpriebe/kubectl-dpod
+module github.com/jpriebe/kubectl-pod-inspect
 
 go 1.14
 

@@ -33,7 +33,7 @@ type containerInfo struct {
 	Ready        bool
 }
 
-type dpodCommand struct {
+type podInspectCommand struct {
 	out         io.Writer
 	f           cmdutil.Factory
 	clientset   *kubernetes.Clientset
@@ -42,16 +42,16 @@ type dpodCommand struct {
 	numEvents   int
 }
 
-// NewDpodCommand creates the command for rendering the Kubernetes server version.
-func NewDpodCommand(streams genericclioptions.IOStreams) *cobra.Command {
-	dpcmd := &dpodCommand{
+// NewPodInspectCommand creates the command for rendering the Kubernetes server version.
+func NewPodInspectCommand(streams genericclioptions.IOStreams) *cobra.Command {
+	dpcmd := &podInspectCommand{
 		out: streams.Out,
 	}
 
 	ccmd := &cobra.Command{
-		Use:          "dpod",
-		Short:        "Lists pod containers' status",
-		Long:         "Lists pod containers' status",
+		Use:          "kubectl pod-inspect <podname>",
+		Short:        "Inspects a pod",
+		Long:         "Provides detailed information about a pod, including its containers' statuses, pod events, and logs from non-ready containers.",
 		SilenceUsage: true,
 		Args:         cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -75,7 +75,7 @@ func NewDpodCommand(streams genericclioptions.IOStreams) *cobra.Command {
 	return ccmd
 }
 
-func (dp *dpodCommand) run(args []string) error {
+func (dp *podInspectCommand) run(args []string) error {
 	clientset, err := dp.f.KubernetesClientSet()
 	if err != nil {
 		return err
@@ -107,7 +107,7 @@ func (dp *dpodCommand) run(args []string) error {
 	return nil
 }
 
-func (dp *dpodCommand) displayPod(podName string) error {
+func (dp *podInspectCommand) displayPod(podName string) error {
 	pod, err := dp.clientset.CoreV1().Pods(dp.namespace).Get(context.Background(), podName, metav1.GetOptions{})
 	if err != nil {
 		return err
@@ -269,7 +269,7 @@ func (dp *dpodCommand) displayPod(podName string) error {
 	return nil
 }
 
-func (dp *dpodCommand) getPodLogs(podName, containerName string) (string, error) {
+func (dp *podInspectCommand) getPodLogs(podName, containerName string) (string, error) {
 
 	var tailLines int64
 	tailLines = int64(dp.numLogLines)
@@ -297,7 +297,7 @@ func (dp *dpodCommand) getPodLogs(podName, containerName string) (string, error)
 	return buf.String(), nil
 }
 
-func (dp *dpodCommand) getPodFailures(pod *v1.Pod) (string, error) {
+func (dp *podInspectCommand) getPodFailures(pod *v1.Pod) (string, error) {
 	retval := ""
 
 	failedPodConditions := []v1.PodCondition{}
@@ -335,7 +335,7 @@ func (dp *dpodCommand) getPodFailures(pod *v1.Pod) (string, error) {
 	return retval, nil
 }
 
-func (dp *dpodCommand) getPodEvents(pod *v1.Pod) (string, error) {
+func (dp *podInspectCommand) getPodEvents(pod *v1.Pod) (string, error) {
 	retval := ""
 
 	field := fmt.Sprintf("involvedObject.name=%s", pod.Name)
@@ -437,7 +437,7 @@ func getContainerStateInfo(state v1.ContainerState) (string, string) {
 	return str1, str2
 }
 
-func (dp *dpodCommand) newTablewriter(out io.Writer) *tablewriter.Table {
+func (dp *podInspectCommand) newTablewriter(out io.Writer) *tablewriter.Table {
 	tw := tablewriter.NewWriter(out)
 	tw.SetRowSeparator("")
 	tw.SetCenterSeparator("")
