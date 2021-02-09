@@ -50,7 +50,7 @@ func NewPodInspectCommand(streams genericclioptions.IOStreams) *cobra.Command {
 	}
 
 	ccmd := &cobra.Command{
-		Use:          "kubectl pod-inspect <podname>",
+		Use:          "kubectl pod_inspect <podname>",
 		Short:        "Inspects a pod",
 		Long:         "Provides detailed information about a pod, including its containers' statuses, pod events, and logs from non-ready containers.",
 		SilenceUsage: true,
