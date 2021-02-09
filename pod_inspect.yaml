@@ -29,4 +29,4 @@ spec:
         arch: amd64
     uri: https://github.com/jpriebe/kubectl-pod_inspect/releases/download/v0.1.6/kubectl-pod_inspect_0.1.6_Windows_x86_64.tar.gz
     sha256: 28e47d161e7f697d5a29b429082396c648bd8a7260c81a6b114099bf4e91e3bc
-    bin: kubectl-pod_inspect
+    bin: kubectl-pod_inspect.exe
