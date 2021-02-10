@@ -9,7 +9,7 @@ before:
 builds:
   - env:
       - CGO_ENABLED=0
-    binary: pod_inspect
+    binary: kubectl-pod_inspect
     goos:
       - linux
       - windows
