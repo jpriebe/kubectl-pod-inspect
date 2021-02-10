@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/jpriebe/kubectl-pod_inspect/cmd"
+	"github.com/jpriebe/kubectl-pod-inspect/cmd"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
 

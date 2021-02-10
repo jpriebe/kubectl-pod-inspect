@@ -4,11 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
 
-const appLabel = "kubectl pod_inspect"
+const appLabel = "kubectl pod-inspect"
 
 var version string
 
@@ -36,6 +37,19 @@ func newVersionCmd(out io.Writer) *cobra.Command {
 			return version.run()
 		},
 	}
+
+	// we have to muck with the usage template because we're using "kubectl pod-inspect" for the
+	// "Use" line in the root-level command.  Cobra really doesn't like when you use two tokens like
+	// that, but the krew repo wants us to have the "kubectl" prepended to the usage info.
+	oldLine := `{{if .Runnable}}
+  {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
+  {{.CommandPath}} [command]{{end}}`
+	newLine := `
+  kubectl pod-inspect version{{if .HasAvailableSubCommands}}
+  {{.CommandPath}} [command]{{end}}`
+
+	cmd.SetUsageTemplate(strings.Replace(cmd.UsageTemplate(), oldLine, newLine, 1))
+
 	return cmd
 }
 

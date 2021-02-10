@@ -51,7 +51,7 @@ func NewPodInspectCommand(streams genericclioptions.IOStreams) *cobra.Command {
 	}
 
 	ccmd := &cobra.Command{
-		Use:          "kubectl pod_inspect <podname>",
+		Use:          "kubectl pod-inspect <podname>",
 		Short:        "Inspects a pod",
 		Long:         "Provides detailed information about a pod, including its containers' statuses, pod events, and logs from non-ready containers.",
 		SilenceUsage: true,
@@ -60,6 +60,16 @@ func NewPodInspectCommand(streams genericclioptions.IOStreams) *cobra.Command {
 			return dpcmd.run(args)
 		},
 	}
+
+	// we have to muck with the usage template because we're using "kubectl pod-inspect" for the
+	// "Use" value.  Cobra really doesn't like when you use two tokens like that, but the
+	// krew repo wants us to have the "kubectl" prepended to the usage info.
+	oldLine := `{{if .HasAvailableSubCommands}}
+  {{.CommandPath}} [command]{{end}}`
+	newLine := `{{if .HasAvailableSubCommands}}
+  kubectl pod-inspect [command]{{end}}`
+
+	ccmd.SetUsageTemplate(strings.Replace(ccmd.UsageTemplate(), oldLine, newLine, 1))
 
 	ccmd.Flags().IntVarP(&dpcmd.numEvents, "max-num-events", "e", 10, "Maximum number of events to display; 0 means display all")
 	ccmd.Flags().IntVarP(&dpcmd.numLogLines, "max-num-log-lines", "l", 5, "Maximum number of log lines to display; 0 means display all")

@@ -1,6 +1,6 @@
 
 
-$ kubectl pod_inspect mypod-5bc4465b74-q6hn4 
+$ kubectl pod-inspect mypod-5bc4465b74-q6hn4 
 
 [36mPod: [0mmy-namespace / my-pod-b568797b-kfjmh
 
