@@ -35,6 +35,11 @@ type containerInfo struct {
 	ReadyIcon    string
 }
 
+const PODINSPECT_STATUS_WAITING = 0
+const PODINSPECT_STATUS_FAILED = 1
+const PODINSPECT_STATUS_OK = 2
+const PODINSPECT_STATUS_UNKNOWN = 3
+
 type podInspectCommand struct {
 	out         io.Writer
 	f           cmdutil.Factory
@@ -146,7 +151,7 @@ func (dp *podInspectCommand) displayPod(podName string) error {
 			return fmt.Errorf("status found for init container '%s'; no corresponding container in spec", cs.Name)
 		}
 
-		cstate, cmsg, creadyicon := getContainerStateInfo(cs.State)
+		cstate, cmsg, podInspectStatus, creadyicon := getContainerStateInfo(cs)
 
 		cinfo[key].State = cstate
 		cinfo[key].StateMessage = cmsg
@@ -154,7 +159,7 @@ func (dp *podInspectCommand) displayPod(podName string) error {
 		cinfo[key].Ready = cs.Ready
 		cinfo[key].ReadyIcon = creadyicon
 
-		if !cs.Ready {
+		if podInspectStatus != PODINSPECT_STATUS_OK {
 			logs, err := dp.getPodLogs(podName, cinfo[key].Name)
 			if err != nil {
 				return err
@@ -178,13 +183,24 @@ func (dp *podInspectCommand) displayPod(podName string) error {
 		cinfo[key].Image = c.Image
 	}
 
+	fmt.Printf("%s%s / %s\n", aurora.Cyan("Pod:  "), pod.Namespace, pod.Name)
+	fmt.Printf("%s%s\n\n", aurora.Cyan("Node: "), pod.Spec.NodeName)
+
+	// handle complete pod failure
+	if len(pod.Status.ContainerStatuses) == 0 {
+		fmt.Printf("Phase:     %s\n", pod.Status.Phase)
+		fmt.Printf("Reason:    %s\n", pod.Status.Reason)
+		fmt.Printf("Message:   %s\n", pod.Status.Message)
+		return nil
+	}
+
 	for _, cs := range pod.Status.ContainerStatuses {
 		key := fmt.Sprintf("1-%s", cs.Name)
 		if _, ok := cinfo[key]; !ok {
 			return fmt.Errorf("status found for container '%s'; no corresponding container in spec", cs.Name)
 		}
 
-		cstate, cmsg, creadyicon := getContainerStateInfo(cs.State)
+		cstate, cmsg, podInspectStatus, creadyicon := getContainerStateInfo(cs)
 
 		cinfo[key].State = cstate
 		cinfo[key].StateMessage = cmsg
@@ -192,7 +208,7 @@ func (dp *podInspectCommand) displayPod(podName string) error {
 		cinfo[key].Ready = cs.Ready
 		cinfo[key].ReadyIcon = creadyicon
 
-		if !cs.Ready {
+		if podInspectStatus != PODINSPECT_STATUS_OK {
 			logs, err := dp.getPodLogs(podName, cinfo[key].Name)
 			if err != nil {
 				return err
@@ -210,8 +226,6 @@ func (dp *podInspectCommand) displayPod(podName string) error {
 	}
 	sort.Strings(keys)
 
-	fmt.Printf("%s%s / %s\n\n", aurora.Cyan("Pod: "), pod.Namespace, pod.Name)
-
 	fmt.Printf("%s\n\n", aurora.Cyan("Containers: "))
 
 	tw := dp.newTablewriter(dp.out)
@@ -227,6 +241,9 @@ func (dp *podInspectCommand) displayPod(podName string) error {
 	for _, key := range keys {
 		ci := cinfo[key]
 		restartCount := fmt.Sprintf("%d", ci.RestartCount)
+		if ci.RestartCount > 0 {
+			restartCount = aurora.Yellow(fmt.Sprintf(" %s", restartCount)).String()
+		}
 
 		tw.Append([]string{
 			ci.TypeCode,
@@ -313,7 +330,7 @@ func (dp *podInspectCommand) getPodFailures(pod *v1.Pod) (string, error) {
 	failedPodConditions := []v1.PodCondition{}
 
 	for _, condition := range pod.Status.Conditions {
-		if condition.Status != v1.ConditionTrue {
+		if condition.Status != v1.ConditionTrue && condition.Reason != "PodCompleted" {
 			failedPodConditions = append(failedPodConditions, condition)
 		}
 	}
@@ -413,29 +430,72 @@ func (dp *podInspectCommand) getPodEvents(pod *v1.Pod) (string, error) {
 	return retval, nil
 }
 
-func getContainerStateInfo(state v1.ContainerState) (string, string, string) {
+func getContainerStateInfo(status v1.ContainerStatus) (string, string, int, string) {
 	stateCode := ""
 	reason := ""
 	message := ""
 	readyicon := ""
 
+	state := status.State
+
+	// the podInspectStatus is an interpretation of the status and reasons that we can
+	// use to show the right "ready" icon in the tabular output and use to decide whether
+	// to show container logs for containers that are having trouble.
+	//
+	// I have tried to avoid interpreting reason strings (I haven't seen comprehensive
+	// documentation of the possible values, so I'm not sure I can trust them).
+	//
+	// But it's not enough to rely solely on the container state reported by kubernetes.
+	//
+	// Examples:
+	//  - a successfully completed job's container has a state of "Terminated"
+	//  - a container in CrashLoopBackOff or ImagePullBackOff will have a state of
+	//    "Waiting", just as will a container that is just starting up for the first time
+	//
+	// It seems there's really no way to avoid interpreting reason strings
+	// if we want the output of pod inspect to properly reflect the ok / not ok
+	// state of each container.
+	podInspectStatus := PODINSPECT_STATUS_OK
+
 	if state.Running != nil {
 		stateCode = "R"
 		reason = ""
 		message = ""
-		readyicon = aurora.Green("✔").String()
 	} else if state.Terminated != nil {
 		stateCode = "T"
 		reason = state.Terminated.Reason
 		message = state.Terminated.Message
-		readyicon = aurora.Red("✖").String()
+		if reason != "Completed" {
+			podInspectStatus = PODINSPECT_STATUS_FAILED
+		}
 	} else if state.Waiting != nil {
 		stateCode = "W"
 		reason = state.Waiting.Reason
 		message = state.Waiting.Message
-		readyicon = aurora.Yellow("…").String()
+
+		if reason == "ImagePullBackOff" {
+			podInspectStatus = PODINSPECT_STATUS_FAILED
+		} else if status.LastTerminationState.Terminated != nil {
+			// if we're waiting and we have been terminated we're probably in CrashLoopBackOff,
+			// soo we want to reflect the status as failing
+			podInspectStatus = PODINSPECT_STATUS_FAILED
+		} else {
+			podInspectStatus = PODINSPECT_STATUS_WAITING
+		}
+
 	} else {
-		return "n/a", "", "?"
+		return "n/a", "", PODINSPECT_STATUS_UNKNOWN, "?"
+	}
+
+	if status.LastTerminationState.Terminated != nil {
+		lts := status.LastTerminationState
+
+		supplementalMessage := fmt.Sprintf("%s  Last Terminated: %s (%d), %s", aurora.Yellow("⚠️").String(), lts.Terminated.Reason, lts.Terminated.ExitCode, lts.Terminated.FinishedAt)
+		if message == "" {
+			message = supplementalMessage
+		} else {
+			message += "\n" + supplementalMessage
+		}
 	}
 
 	str1 := stateCode
@@ -443,7 +503,19 @@ func getContainerStateInfo(state v1.ContainerState) (string, string, string) {
 		str1 = fmt.Sprintf("%s (%s)", stateCode, reason)
 	}
 
-	return str1, message, readyicon
+	switch podInspectStatus {
+	case PODINSPECT_STATUS_FAILED:
+		readyicon = aurora.Red("✖").String()
+		break
+	case PODINSPECT_STATUS_OK:
+		readyicon = aurora.Green("✔").String()
+		break
+	case PODINSPECT_STATUS_WAITING:
+		readyicon = aurora.Yellow("…").String()
+		break
+	}
+
+	return str1, message, podInspectStatus, readyicon
 }
 
 func (dp *podInspectCommand) newTablewriter(out io.Writer) *tablewriter.Table {
